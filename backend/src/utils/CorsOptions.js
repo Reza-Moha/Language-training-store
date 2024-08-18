@@ -1,6 +1,6 @@
 const corsOptions = {
     origin: function (origin, callback) {
-        if (process.env.WHITE_LIST_ORGIN.indexOf(origin) !== -1) {
+        if (process.env.WHITE_LIST_ORGIN.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
             callback(new Error("Not allowed by CORS"));
@@ -8,4 +8,5 @@ const corsOptions = {
     },
     credentials: true,
 };
-module.exports = corsOptions
+
+module.exports = corsOptions;

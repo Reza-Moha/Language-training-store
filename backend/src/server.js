@@ -8,6 +8,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 const createError = require("http-errors");
+const {AllRoutes} = require("./routes/routes");
 
 module.exports = class Application{
     #app = express();
@@ -16,6 +17,7 @@ module.exports = class Application{
         this.#PORT = port;
         this.configApplication()
         this.createServer(port)
+        this.createRoutes()
         this.errorHandling()
     }
 
@@ -60,6 +62,9 @@ module.exports = class Application{
         );
     }
 
+    createRoutes() {
+        this.#app.use(AllRoutes);
+    }
     errorHandling() {
         this.#app.use((req, res, next) => {
             next(createError.NotFound("آدرس مورد نظر یافت نشد"));
