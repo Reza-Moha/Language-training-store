@@ -3,6 +3,7 @@ const {
   sendAuthSms,
   signAccessToken,
   signRefreshToken,
+  verifyRefreshToken,
 } = require("../../utils");
 const { getOtpSchema, checkOtpSchema } = require("../../validators");
 const { UserModel } = require("../../models/User.model");
@@ -40,6 +41,7 @@ class AuthController {
       next(error);
     }
   }
+
   async checkOtp(req, res, next) {
     try {
       const { phoneNumber, code } = await checkOtpSchema.validateAsync(
@@ -90,6 +92,37 @@ class AuthController {
         statusCode: HttpStatus.OK,
         auth: true,
         message: "احراز هویت شما با موفقیت انجام شد",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async refreshToken(req, res, next) {
+    try {
+      let { refreshToken } = req.cookies;
+      const phoneNumber = await verifyRefreshToken(refreshToken);
+      const user = await UserModel.findOne({
+        where: { phoneNumber },
+        attributes: {
+          exclude: ["password", "otp"],
+        },
+      });
+      const accessToken = await signAccessToken(user.id);
+      let token = await TokenModel.findOne({
+        where: { userId: user.id },
+      });
+      token.accessToken = accessToken;
+      await token.save();
+      res.cookie("accessToken", token.accessToken, {
+        sameSite: "lax",
+        secure: true,
+        maxAge: 10 * 60 * 1000,
+        httpOnly: true,
+      });
+      return res.status(HttpStatus.OK).send({
+        status: HttpStatus.OK,
+        message: "توکن به روزرسانی شد",
       });
     } catch (error) {
       next(error);

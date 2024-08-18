@@ -1,6 +1,7 @@
 const { UserModel } = require("../../models/User.model");
 const JWT = require("jsonwebtoken");
 const axios = require("axios");
+const { TokenModel } = require("../../models/Token.model");
 const signAccessToken = (userId) => {
   return new Promise(async (res, rej) => {
     try {
@@ -48,6 +49,38 @@ const signRefreshToken = (userId) => {
   });
 };
 
+const verifyRefreshToken = (token) => {
+  return new Promise((resolve, reject) => {
+    JWT.verify(
+      token,
+      process.env.REFRESH_TOKEN_SECRET_KEY,
+      async (error, payload) => {
+        if (error)
+          return reject(createError.Unauthorized("وارد حساب کاربری خود شوید"));
+        const { phoneNumber } = payload || {};
+        const User = await UserModel.findOne({
+          where: { phoneNumber },
+          attributes: {
+            exclude: ["password", "otp"],
+          },
+          include: [
+            {
+              model: TokenModel,
+            },
+          ],
+        });
+        console.log("verifyRefreshToken", User);
+        if (!User)
+          reject(createError.Unauthorized("وارد حساب کاربری خود شوید"));
+        const refreshToken = await User.token.refreshToken;
+        if (!refreshToken) reject(createError.Unauthorized("توکن نامعتبر است"));
+        if (token === refreshToken) return resolve(phoneNumber);
+        reject(createError.Unauthorized("ورود مجدد به حساب کاربری ناموفق بود"));
+      },
+    );
+  });
+};
+
 const sendAuthSms = async (recNumber, token1, token2, token3) => {
   const AccessHash = process.env.SMS_ACCESS_HASH;
   const PatternId = process.env.SMS_PATTERN_ID;
@@ -65,4 +98,5 @@ module.exports = {
   signAccessToken,
   signRefreshToken,
   sendAuthSms,
+  verifyRefreshToken,
 };
