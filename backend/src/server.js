@@ -37,7 +37,6 @@ module.exports = class Application{
             sameSite: 'strict'
         }));
         this.#app.use(helmet());
-        this.#app.use(csrfProtection);
         this.#app.use(hpp());
         this.#app.use(morgan("dev"));
         this.#app.use(express.json());
